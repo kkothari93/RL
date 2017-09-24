@@ -19,31 +19,29 @@ class LinearPolicy(object):
 
 
 
-    def train(self,env, lr = 0.001, discount = 0.9, n_evals_per_model = 10):
+    def train(self,env, lr = 0.0001, discount = 0.9, n_evals_per_model = 10):
         # evaluate this episode
         done = False
-        c = n_evals_per_model
         reward = 0
-        states = []
+        c = n_evals_per_model
         s = env.reset()
-        while c > 0:
+        for c in range(n_evals_per_model):
             a, q = self.choose(s)
             sp, run, done, _ = env.step(a)
-            y = run + np.max(self.choose_target(sp)[1]) - q
+            y = run + discount*np.max(self.choose_target(sp)[1]) - q
             loss = np.linalg.norm(y - q)**2
             x_state = np.concatenate((np.array([1]), s), axis = 0)
             dW = lr*np.outer(y-q,x_state) # step_size
             self.W += dW
+            reward += run 
             env.render()
 
             if done:
                 s = env.reset()
                 self.target = self.W
-                c -= 1
-
-        reward /= n_evals_per_model
-        
-
+                print("Loss, reward, episode %d = %f, %f"%(c,
+                                                       reward, loss))
+                reward = 0
 
 env = gym.make('CartPole-v0')
 env.reset()
